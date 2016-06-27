@@ -1138,13 +1138,13 @@ template <>
 template <>
 /*static*/ char Matrix<char>::MakeNan(size_t)
 {
-    return 0;
+    LogicError("Not supported");
 } // (needed for completeness)
 template <>
 /*static*/ short Matrix<short>::MakeNan(size_t)
 {
-    return 0;
-}
+    LogicError("Not supported");
+} // (needed for completeness)
 
 template <class ElemType>
 void Matrix<ElemType>::MaskColumnsValue(const Matrix<char>& columnsMask, ElemType val)
