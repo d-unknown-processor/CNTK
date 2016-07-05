@@ -437,7 +437,7 @@ EVAL_SRC=\
 	$(SOURCEDIR)/ActionsLib/NetworkFactory.cpp \
 	$(SOURCEDIR)/ActionsLib/NetworkDescriptionLanguage.cpp \
 	$(SOURCEDIR)/ActionsLib/SimpleNetworkBuilder.cpp \
-	$(SOURCEDIR)/ActionsLib/NDLNetworkBuilder.cpp 
+	$(SOURCEDIR)/ActionsLib/NDLNetworkBuilder.cpp \
 
 EVAL_SRC+=$(SGDLIB_SRC)
 EVAL_SRC+=$(COMPUTATION_NETWORK_LIB_SRC)
@@ -454,7 +454,7 @@ $(EVAL_LIB): $(EVAL_OBJ)
 	@echo $(SEPARATOR)
 	@mkdir -p $(dir $@)
 	@echo Building $(EVAL_LIB) for $(ARCH) with build type $(BUILDTYPE)
-	$(CXX) $(LDFLAGS) -shared $(patsubst %,-L%, $(LIBDIR) $(LIBPATH)) $(patsubst %,$(RPATH)%, $(ORIGINDIR) $(LIBPATH)) -o $@ $^ $(LIBS)
+	$(CXX) $(LDFLAGS) -shared $(patsubst %,-L%, $(LIBDIR) $(LIBPATH) $(NVMLPATH)) $(patsubst %,$(RPATH)%, $(ORIGINDIR) $(LIBPATH)) -o $@ $^ $(LIBS)
 
 ########################################
 # Eval Sample client
@@ -495,7 +495,7 @@ $(BINARY_READER): $(BINARYREADER_OBJ) | $(CNTKMATH_LIB)
 	@echo $(SEPARATOR)
 	$(CXX) $(LDFLAGS) -shared $(patsubst %,-L%, $(LIBDIR) $(LIBPATH)) $(patsubst %,$(RPATH)%, $(ORIGINDIR) $(LIBPATH)) -o $@ $^ -l$(CNTKMATH)
 
-########################################
+#_########################################
 # HTKMLFReader plugin
 ########################################
 
@@ -832,7 +832,7 @@ UNITTEST_READER_SRC = \
 	$(SOURCEDIR)/../Tests/UnitTests/ReaderTests/UCIFastReaderTests.cpp \
 	$(SOURCEDIR)/../Tests/UnitTests/ReaderTests/stdafx.cpp \
 	$(SOURCEDIR)/Readers/CNTKTextFormatReader/Indexer.cpp \
-	$(SOURCEDIR)/Readers/CNTKTextFormatReader/TextParser.cpp
+	$(SOURCEDIR)/Readers/CNTKTextFormatReader/TextParser.cpp \
 
 UNITTEST_READER_OBJ := $(patsubst %.cpp, $(OBJDIR)/%.o, $(UNITTEST_READER_SRC))
 
@@ -844,9 +844,43 @@ $(UNITTEST_READER): $(UNITTEST_READER_OBJ) | $(HTKMLFREADER) $(HTKDESERIALIZERS)
 	@echo $(SEPARATOR)
 	@mkdir -p $(dir $@)
 	@echo building $@ for $(ARCH) with build type $(BUILDTYPE)
-	$(CXX) $(LDFLAGS) $(patsubst %,-L%, $(LIBDIR) $(BOOSTLIB_PATH)) $(patsubst %, $(RPATH)%, $(LIBDIR) $(BOOSTLIB_PATH)) -o $@ $^ $(patsubst %, -l%, $(BOOSTLIBS)) $(LIBDIR)/HTKMLFReader.so $(LIBDIR)/HTKDeserializers.so $(LIBDIR)/UCIFastReader.so $(LIBDIR)/ImageReader.so -l$(CNTKMATH) 
+	$(CXX) $(LDFLAGS) $(patsubst %,-L%, $(LIBDIR) $(BOOSTLIB_PATH)) $(patsubst %, $(RPATH)%, $(LIBDIR) $(BOOSTLIB_PATH)) -o $@ $^ $(patsubst %, -l%, $(BOOSTLIBS)) $(HTKMLFREADER) $(HTKDESERIALIZERS) $(UCIFASTREADER) $(IMAGEREADER) -l$(CNTKMATH) 
 
-unittests: $(UNITTEST_EVAL) $(UNITTEST_READER)
+UNITTEST_NETWORK_SRC = \
+	$(SOURCEDIR)/../Tests/UnitTests/NetworkTests/OperatorEvaluation.cpp \
+	$(SOURCEDIR)/../Tests/UnitTests/NetworkTests/stdafx.cpp \
+	$(SOURCEDIR)/CNTK/ModelEditLanguage.cpp \
+	$(SOURCEDIR)/ActionsLib/TrainActions.cpp \
+	$(SOURCEDIR)/ActionsLib/EvalActions.cpp \
+	$(SOURCEDIR)/ActionsLib/OtherActions.cpp \
+	$(SOURCEDIR)/ActionsLib/SpecialPurposeActions.cpp \
+	$(SOURCEDIR)/ActionsLib/NetworkFactory.cpp \
+	$(SOURCEDIR)/ActionsLib/NetworkDescriptionLanguage.cpp \
+	$(SOURCEDIR)/ActionsLib/SimpleNetworkBuilder.cpp \
+	$(SOURCEDIR)/ActionsLib/NDLNetworkBuilder.cpp \
+	$(SOURCEDIR)/CNTK/BrainScript/BrainScriptEvaluator.cpp \
+	$(SOURCEDIR)/CNTK/BrainScript/BrainScriptParser.cpp \
+	$(SOURCEDIR)/CNTK/BrainScript/BrainScriptTest.cpp \
+
+UNITTEST_NETWORK_SRC += $(COMPUTATION_NETWORK_LIB_SRC)
+UNITTEST_NETWORK_SRC += $(CNTK_COMMON_SRC)
+UNITTEST_NETWORK_SRC += $(SEQUENCE_TRAINING_LIB_SRC)
+UNITTEST_NETWORK_SRC += $(SGDLIB_SRC)
+
+UNITTEST_NETWORK_OBJ := $(patsubst %.cu, $(OBJDIR)/%.o, $(patsubst %.cpp, $(OBJDIR)/%.o, $(UNITTEST_NETWORK_SRC)))
+
+UNITTEST_NETWORK := $(BINDIR)/networktests
+ALL += $(UNITTEST_NETWORK)
+SRC += $(UNITTEST_NETWORK_SRC)
+
+$(UNITTEST_NETWORK): $(UNITTEST_NETWORK_OBJ) | $(CNTKMATH_LIB) 
+	@echo $(SEPARATOR)
+	@mkdir -p $(dir $@)
+	@echo building $@ for $(ARCH) with build type $(BUILDTYPE)
+	$(CXX) $(LDFLAGS) $(patsubst %,-L%, $(LIBDIR) $(LIBPATH) $(NVMLPATH) $(BOOSTLIB_PATH)) $(patsubst %, $(RPATH)%, $(LIBDIR) $(LIBPATH) $(BOOSTLIB_PATH)) -o $@ $^ $(patsubst %, -l%, $(BOOSTLIBS)) -l$(CNTKMATH) $(LIBS) 
+
+
+unittests: $(UNITTEST_EVAL) $(UNITTEST_READER) $(UNITTEST_NETWORK)
 
 ########################################
 # General compile and dependency rules
